@@ -5,11 +5,13 @@ from collections import OrderedDict, defaultdict
 class VGG(nn.Module):
   ARCH = [64, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M']
 
-  def __init__(self, state_dict=None) -> None:
+  def __init__(self, state_dict=None, quant=False) -> None:
     super().__init__()
 
     layers = []
     counts = defaultdict(int)
+
+    self.quant = quant
 
     def add(name: str, layer: nn.Module) -> None:
       layers.append((f"{name}{counts[name]}", layer))
@@ -39,7 +41,10 @@ class VGG(nn.Module):
     x = self.backbone(x)
 
     # avgpool: [N, 512, 2, 2] => [N, 512]
-    x = x.mean([2, 3])
+    if self.quant:
+      x = x.view(x.shape[0], -1)
+    else:
+      x = x.mean([2, 3])
 
     # classifier: [N, 512] => [N, 10]
     x = self.classifier(x)
@@ -50,7 +55,7 @@ class VGG(nn.Module):
       self.load_state_dict(self.state_dict)
 
 
-def cifar10_vgg9_bn(pretrained=False, **kwargs):
+def cifar10_vgg9_bn(pretrained=False, quant=False, **kwargs):
   if pretrained:
     state_dict = torch.hub.load_state_dict_from_url(
         'https://hanlab18.mit.edu/files/course/labs/vgg.cifar.pretrained.pth',
@@ -59,5 +64,5 @@ def cifar10_vgg9_bn(pretrained=False, **kwargs):
     state_dict = state_dict['state_dict']
   else:
     state_dict = None
-  model = VGG(state_dict)
+  model = VGG(state_dict, quant)
   return model
