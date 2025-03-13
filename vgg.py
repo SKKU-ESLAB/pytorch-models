@@ -54,6 +54,7 @@ def cifar10_vgg9_bn(pretrained=False, **kwargs):
   if pretrained:
     state_dict = torch.hub.load_state_dict_from_url(
         'https://hanlab18.mit.edu/files/course/labs/vgg.cifar.pretrained.pth',
+        map_location='cpu',
         progress=True)
     state_dict = state_dict['state_dict']
   else:
